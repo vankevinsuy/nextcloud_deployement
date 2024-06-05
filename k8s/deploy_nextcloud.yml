@@ -10,13 +10,16 @@ kind: PersistentVolume
 metadata:
   name: nextcloud-pv-nfs-config
   namespace: nextcloud
+  labels:
+    app: nextcloud
+    type: config
 spec:
   storageClassName: ""
   capacity:
     storage: 1Gi
   accessModes:
     - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain # < The persistent volume can reclaimed 
+  persistentVolumeReclaimPolicy: Retain
   hostPath:
     path: /mnt/hdd2T/nextcloud/config
 ---
@@ -25,6 +28,9 @@ kind: PersistentVolume
 metadata:
   name: nextcloud-pv-nfs-download
   namespace: nextcloud
+  labels:
+    app: nextcloud
+    type: data
 spec:
   storageClassName: ""
   capacity:
@@ -40,6 +46,9 @@ kind: PersistentVolumeClaim
 metadata:
   name: nextcloud-pvc-config
   namespace: nextcloud
+  labels:
+    app: nextcloud
+    type: config
 spec:
   storageClassName: ""
   volumeName: nextcloud-pv-nfs-config
@@ -55,6 +64,9 @@ kind: PersistentVolumeClaim
 metadata:
   name: nextcloud-pvc-download
   namespace: nextcloud
+  labels:
+    app: nextcloud
+    type: data
 spec:
   storageClassName: ""
   volumeName: nextcloud-pv-nfs-download
@@ -74,14 +86,10 @@ metadata:
   namespace: nextcloud
 spec:
   replicas: 1
-  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: nextcloud
   strategy:
-    rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 1
     type: RollingUpdate
   template:
     metadata:
@@ -89,31 +97,38 @@ spec:
         app: nextcloud
     spec:
       volumes:
-      - name: nfs-nextcloud-config
-        persistentVolumeClaim:
-          claimName: nextcloud-pvc-config
-      - name: nfs-nextcloud-data
-        persistentVolumeClaim:
-          claimName: nextcloud-pvc-download
+        - name: nfs-nextcloud-config
+          persistentVolumeClaim:
+            claimName: nextcloud-pvc-config
+        - name: nfs-nextcloud-data
+          persistentVolumeClaim:
+            claimName: nextcloud-pvc-download
       containers:
-      - env:
-        - name: PGID
-          value: "1000"
-        - name: PUID
-          value: "1000"
-        - name: TZ
-          value: US/Eastern
-        image: lscr.io/linuxserver/nextcloud:29.0.0
-        imagePullPolicy: Always
-        name: nextcloud
-        ports:
-        - containerPort: 80
-          protocol: TCP
-        volumeMounts:
-        - mountPath: /config
-          name: nfs-nextcloud-config
-        - mountPath: /data
-          name: nfs-nextcloud-data 
+        - env:
+            - name: PGID
+              value: "1000"
+            - name: PUID
+              value: "1000"
+            - name: TZ
+              value: US/Eastern
+          image: lscr.io/linuxserver/nextcloud:29.0.0
+          imagePullPolicy: Always
+          name: nextcloud
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /config
+              name: nfs-nextcloud-config
+            - mountPath: /data
+              name: nfs-nextcloud-data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 1
+              memory: 2Gi
       restartPolicy: Always
 ---
 kind: Service
@@ -121,22 +136,25 @@ apiVersion: v1
 metadata:
   name: nextcloud-svc
   namespace: nextcloud
+  labels:
+    app: nextcloud
   annotations:
     metallb.universe.tf/allow-shared-ip: nextcloud
 spec:
   selector:
     app: nextcloud
   ports:
-  - port: 80
-    targetPort: 80
-    protocol: TCP
-
+    - port: 80
+      targetPort: 80
+      protocol: TCP
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: nextcloud-route
   namespace: nextcloud
+  labels:
+    app: nextcloud
 spec:
   parentRefs:
     - name: main-gateway
@@ -144,13 +162,12 @@ spec:
   hostnames:
     - "nextcloud.snoozyhomelab.com"
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-    backendRefs:
-    - name: nextcloud-svc
-      kind: Service
-      namespace: nextcloud
-      port: 80
-
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: nextcloud-svc
+          kind: Service
+          namespace: nextcloud
+          port: 80
