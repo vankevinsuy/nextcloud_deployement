@@ -77,6 +77,47 @@ spec:
     requests:
       storage: 500Gi
 ---
+
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgres-pv-nfs
+  namespace: nextcloud
+  labels:
+    app: postgres
+    type: data
+spec:
+  storageClassName: ""
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /mnt/hdd2T/nextcloud/postgres
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: nextcloud
+  labels:
+    app: postgres
+    type: data
+spec:
+  storageClassName: ""
+  volumeName: postgres-pv-nfs
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 10Gi
+---
+
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -103,15 +144,18 @@ spec:
         - name: nfs-nextcloud-data
           persistentVolumeClaim:
             claimName: nextcloud-pvc-download
+        - name: nfs-postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-pvc
       containers:
-        - env:
+        - image: lscr.io/linuxserver/nextcloud:29.0.0
+          env:
             - name: PGID
               value: "1000"
             - name: PUID
               value: "1000"
             - name: TZ
               value: US/Eastern
-          image: lscr.io/linuxserver/nextcloud:29.0.0
           imagePullPolicy: Always
           name: nextcloud
           ports:
@@ -128,7 +172,32 @@ spec:
               memory: 512Mi
             limits:
               cpu: 1
-              memory: 2Gi
+              memory: 2Gi 
+
+        - image: postgres:12.19-alpine3.20
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            - name: POSTGRES_USER
+              value: admin
+            - name: POSTGRES_PASSWORD
+              value: admin
+            - name: POSTGRES_DB
+              value: nextcloud
+          imagePullPolicy: Always
+          name: bd
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: nfs-postgres-data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 1
+              memory: 1Gi 
       restartPolicy: Always
 ---
 kind: Service
