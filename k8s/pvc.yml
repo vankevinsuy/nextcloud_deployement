@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nextcloud-pvc-config
+  namespace: nextcloud
+  labels:
+    app: nextcloud
+    type: config
+spec:
+  storageClassName: ""
+  volumeName: nextcloud-pv-nfs-config
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nextcloud-pvc-download
+  namespace: nextcloud
+  labels:
+    app: nextcloud
+    type: data
+spec:
+  storageClassName: ""
+  volumeName: nextcloud-pv-nfs-download
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 500Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: nextcloud
+  labels:
+    app: postgres
+    type: data
+spec:
+  storageClassName: ""
+  volumeName: postgres-pv-nfs
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 10Gi
+---

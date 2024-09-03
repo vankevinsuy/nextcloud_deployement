@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config-map
+  namespace: nextcloud
+data:
+  PGDATA: /var/lib/postgresql/data/pgdata
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nextcloud-config-map
+  namespace: nextcloud
+data:
+  PGID: "1000"
+  PUID: "1000"
+  TZ: "US/Eastern"
