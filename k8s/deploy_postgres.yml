@@ -17,6 +17,9 @@ spec:
       labels:
         app: postgres
     spec:
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
       volumes:
         - name: nfs-postgres-data
           persistentVolumeClaim:
