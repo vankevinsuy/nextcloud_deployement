@@ -7,14 +7,12 @@ metadata:
     app: nextcloud
     type: config
 spec:
-  storageClassName: ""
-  volumeName: nextcloud-pv-nfs-config
+  storageClassName: zimablade-nfs
   accessModes:
     - ReadWriteMany
-  volumeMode: Filesystem
   resources:
     requests:
-      storage: 1Gi
+      storage: 2Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -25,11 +23,9 @@ metadata:
     app: nextcloud
     type: data
 spec:
-  storageClassName: ""
-  volumeName: nextcloud-pv-nfs-download
+  storageClassName: zimablade-nfs
   accessModes:
     - ReadWriteMany
-  volumeMode: Filesystem
   resources:
     requests:
       storage: 500Gi
@@ -43,11 +39,9 @@ metadata:
     app: postgres
     type: data
 spec:
-  storageClassName: ""
-  volumeName: postgres-pv-nfs
+  storageClassName: zimablade-nfs
   accessModes:
     - ReadWriteMany
-  volumeMode: Filesystem
   resources:
     requests:
       storage: 10Gi
